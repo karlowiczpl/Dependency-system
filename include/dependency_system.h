@@ -3,11 +3,11 @@
 
 #include <stdint.h>
 
-#define OUT_COUNT 8
-#define PWM_COUNT 8
+#define OUT_COUNT 1
+#define PWM_COUNT 6
 #define IN_COUNT 8
-#define TEMP_COUNT 8
-#define ROLLER_COUNT 8
+#define TEMP_COUNT 0
+#define ROLLER_COUNT 0
 
 #define _FALLING_EDGE 0
 #define _RISING_EDGE 1
@@ -38,21 +38,37 @@ typedef struct
 
 typedef struct
 {
-  uint8_t inputs[IN_COUNT][4];
-  uint8_t outputs[OUT_COUNT][2];
-  uint8_t temps[TEMP_COUNT][10];
-  uint8_t rollers[ROLLER_COUNT][3];
-  uint8_t pwms[PWM_COUNT][4];
+  #if IN_COUNT > 0
+    uint8_t inputs[IN_COUNT][4];
+  #endif // IN_COUNT > 0
+  #if OUT_COUNT > 0
+    uint8_t outputs[OUT_COUNT][2];
+  #endif // OUT_COUNT > 0
+  #if TEMP_COUNT > 0
+    uint8_t temps[TEMP_COUNT][10];
+  #endif // TEMP_COUNT > 0
+  #if ROLLER_COUNT > 0
+    uint8_t rollers[ROLLER_COUNT][3];
+  #endif // ROLLER_COUNT > 0
+  #if PWM_COUNT > 0
+    uint8_t pwms[PWM_COUNT][4];
+  #endif // PWM_COUNT > 0
 }FX_INDENTIFICATORS_T;
 
 typedef struct
 {
-  uint8_t outputs_restore_states[OUT_COUNT];
-  uint8_t pwms_restore_states[PWM_COUNT];
+  #if OUT_COUNT > 0
+    uint8_t outputs_restore_states[OUT_COUNT];
+  #endif // OUT_COUNT > 0
+  #if IN_COUNT > 0
+    uint8_t pwms_restore_states[PWM_COUNT];
+  #endif // IN_COUNT > 0
 
   FX_INDENTIFICATORS_T fx_indentificators;
   DEPENDENCY_T dependences[256];
 }DEPENDENCY_SYSTEM_DATA_T;
+
+extern DEPENDENCY_SYSTEM_DATA_T* dependency_data;
 
 /*
  *    RUNTIME FUNCTIONS
@@ -87,19 +103,21 @@ void dSet_fx_t2(uint8_t fx, uint8_t time);
 void dSet_time_counter_mode(uint8_t fx_fun, uint8_t mode);
 
 void dSet_output_states_after_boot(uint8_t* outputs_array);
+void dSet_pwm_states_after_boot(uint8_t* pwms);
 
 /*
  *    HOOKS
  */
 
-void dSet_out_callback(uint8_t id, uint8_t pin);
-void dSet_pwm_callback(uint8_t id, uint8_t pin);
-void dSet_rol_callback(uint8_t id, uint8_t pin);
+void dSet_out_callback(uint8_t id, uint8_t pin, uint8_t state);
+void dSet_pwm_callback(uint8_t id, uint8_t pin, uint8_t state);
+void dSet_rol_callback(uint8_t id, uint8_t pin, uint8_t state);
 
 /*
 *     STATIC FUNCTIONS
 */
 
-static void __connect_fx_with_input(uint8_t fx_num, uint8_t* inputs_array, uint8_t type);
+void __connect_fx_with_input(uint8_t fx_num, uint8_t* inputs_array, uint8_t type);
+void __trigger(uint8_t input, uint8_t flag);
 
 #endif // !DEPENDENCY_SYSTEM_H

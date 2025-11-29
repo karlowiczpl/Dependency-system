@@ -8,6 +8,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_library(Dependency_system  src/dependency_system.c)
 target_include_directories(Dependency_system PUBLIC include)
 
-enable_testing()
-
-add_subdirectory(tests)
+if (CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+    enable_testing()
+    add_subdirectory(tests)
+endif()

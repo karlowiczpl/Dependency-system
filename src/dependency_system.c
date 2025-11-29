@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdio.h>
 
 #include "dependency_system.h"
 
@@ -7,6 +8,15 @@ DEPENDENCY_SYSTEM_DATA_T* dependency_data;
 void setup_dependency_system(uint8_t* data)
 {
   dependency_data = (DEPENDENCY_SYSTEM_DATA_T*)data; 
+
+  for(uint8_t i = 0; i < OUT_COUNT; i++)
+  {
+    dSet_out_callback(0, i, dependency_data->outputs_restore_states[i]);
+  }
+  for(uint8_t i = 0; i < PWM_COUNT; i++)
+  {
+    dSet_pwm_callback(0, i, dependency_data->pwms_restore_states[i]);
+  }
 }
 
 void dSet_fx_mode(uint8_t fx_num, uint8_t mode)
@@ -123,31 +133,63 @@ void dSet_time_counter_mode(uint8_t fx_fun, uint8_t mode)
 
 void dSet_output_states_after_boot(uint8_t* outputs_array)
 {
-  for(uint8_t i = 0; i < IN_COUNT; i++)
-  {
-    dependency_data->outputs_restore_states[i] = outputs_array[i];
-  }
+  #if OUT_COUNT > 0
+    for(uint8_t i = 0; i < IN_COUNT; i++)
+    {
+      dependency_data->outputs_restore_states[i] = outputs_array[i];
+    }
+  #endif /* if OUT_COUNT > 0 */
 }
 
-void trigger_press_short(uint8_t input)
+void dSet_pwm_states_after_boot(uint8_t* pwms)
 {
-  uint8_t fx_fun = dependency_data->fx_indentificators.inputs[input - 1][_PRESS_SHORT];
+  #if PWM_COUNT > 0
+    for(uint8_t i = 0; i < PWM_COUNT; i++)
+    {
+      dependency_data->pwms_restore_states[i] = pwms[i];
+    }
+  #endif /* if PWM_COUNT > 0 */
+}
+
+void __trigger(uint8_t input, uint8_t flag)
+{
+  uint8_t fx_fun = dependency_data->fx_indentificators.inputs[input][flag];
 
   if(fx_fun)
   {
     uint8_t id = dependency_data->dependences[fx_fun].driver_id;
     uint8_t activator_pins = dependency_data->dependences[fx_fun].activator_pins;
     uint8_t action_pins = dependency_data->dependences[fx_fun].action_pins;
+    uint8_t action = dependency_data->dependences[fx_fun].action;
 
-    for(uint8_t i = 0; i < IN_COUNT; i++)
+    if(activator_pins & (1 << input))
     {
-      if(activator_pins & (1 << i))
+      for(uint8_t j = 0; j < 16; j++)
       {
-        for(uint8_t i = 0; i < 16; i++)
+        if(action_pins & (1 << j))
         {
-
+          dSet_out_callback(id, j, action);
         }
       }
     }
   }
+}
+void trigger_press_short(uint8_t input)
+{
+  __trigger(input, _PRESS_SHORT);
+}
+
+void trigger_press_long(uint8_t input)
+{
+  __trigger(input, _PRESS_LONG);
+}
+
+void trigger_rising_edge(uint8_t input)
+{
+  __trigger(input, _RISING_EDGE);
+}
+
+void trigger_fallig_edge(uint8_t input)
+{
+  __trigger(input, _FALLING_EDGE);
 }
